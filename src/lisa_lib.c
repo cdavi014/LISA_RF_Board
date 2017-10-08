@@ -76,60 +76,6 @@ void generate_lisa_sync_binary(int corrupt_pct, unsigned char * lisa_sync_buffer
 }
 
 /**
- * Generate a LISA sync buffer with specified corruption
- *
- * @param corrupt_pct       Percentage of bits to corrupt in LISA buffer (0-100)
- * @param lisa_sync_buffer  Buffer to save sync field to
- */
-void generate_lisa_sync(int corrupt_pct, unsigned char * lisa_sync_buffer) {
-    char lisa_prefixes [2] = {0xA0, 0x50};
-    int idx;
-
-    // Generate standard LISA
-    for(int i = 0; i < 2; i++) {
-        for(int j = 0; j < 16; j++) {
-            idx = i * 16 + j;
-            lisa_sync_buffer[idx] = lisa_prefixes[i] + j;
-
-            if(DEBUG > 1)
-                printf("gen_lisa_buffer[%d] = %x\n", idx,
-                                  lisa_sync_buffer[idx] & 0xff);
-        }
-    }
-
-    // Corrupt LISA (non-uniform distribution)
-    int num_corrupt_bits = (LISA_SYNC_LEN * 8 * corrupt_pct) / 100;
-    int rand_bit_buffer [num_corrupt_bits]; // history of corrupted bits
-    int global_byte_offset = 0; // byte offset where bit will be corrupted
-    uint bit_mask = 0;          // bit mask to invert bit
-    int rand_bit = 0;           // corruption bit offset
-
-    for(int i = 0; i < num_corrupt_bits; i++) {
-        while(1) {
-            rand_bit = rand()%(LISA_SYNC_LEN * 8);  // generate offset location
-
-            // check if location has already been corrupted
-            for(int j = 0; j < num_corrupt_bits; j++)
-                if(rand_bit_buffer[j] == rand_bit)
-                    continue;
-
-            rand_bit_buffer[i] = rand_bit;
-            break;
-        }
-
-        // go to offset byte and invert the selected bit offset
-        global_byte_offset = rand_bit / 8;
-        bit_mask = gen_mask(rand_bit - global_byte_offset * 8);
-        lisa_sync_buffer[global_byte_offset] ^= bit_mask;
-
-        if(DEBUG >= 1)
-            printf("[%d] Byte after applying mask [%d] at %d: %x\n", i,
-                    bit_mask, global_byte_offset,
-                    lisa_sync_buffer[global_byte_offset]);
-    }
-}
-
-/**
  * Standard LISA algorithm discussed in class. Will implement custom ones for
  * fun to test speed and other reliability improvements.
  *
