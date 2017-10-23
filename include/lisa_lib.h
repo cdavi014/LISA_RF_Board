@@ -43,6 +43,7 @@ void read_file_buffer(unsigned char * buffer, char * file_location);
 void write_file_buffer(unsigned char * buffer, char * file_location);
 void print_payload(int idx, unsigned char * input_buffer, int buffer_len);
 time_t get_time();
+time_t get_clock_time_us();
 
 /* LISA Algorithms */
 int lisa_find_payload_binary(int confidence_lvl, unsigned char * input_buffer, unsigned char * lisa_bit_buffer);

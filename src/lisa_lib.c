@@ -12,10 +12,10 @@
 void join_lisa_payload(unsigned char * buffer, unsigned char * lisa_sync,
     char * payload) {
 
-    int lisa_idx, payload_idx;
+    int lisa_idx;//, payload_idx;
 
     lisa_idx = 0;
-    payload_idx = lisa_idx + LISA_SYNC_LEN;
+    //payload_idx = lisa_idx + LISA_SYNC_LEN;
 
     // Insert LISA and payload fields byte by byte
     for(int i = lisa_idx; i < lisa_idx + LISA_SYNC_LEN; i++) {
@@ -160,8 +160,8 @@ int lisa_find_payload_binary(int confidence_lvl, unsigned char * input_buffer,
 	int num_matched, max_match_idx = 0;
 	double max_matched_pct = 0.0;
 	int lisa_bit_len = LISA_SYNC_LEN * 8;
-	int buffer_bit_len = BUFFER_LEN * 8;
-	int window_match_pcts[BUFFER_LEN * 8] = { 0 };
+	int buffer_bit_len = BUFFER_LEN;
+	int window_match_pcts[BUFFER_LEN] = { 0 };
 	int payload_location = -1;
 
 	// Window method
@@ -182,8 +182,8 @@ int lisa_find_payload_binary(int confidence_lvl, unsigned char * input_buffer,
 	if (max_matched_pct * 100 >= confidence_lvl) {
 		payload_location = (max_match_idx + lisa_bit_len) % (buffer_bit_len);
 	}
-	printf("[INFO] Match at (%d) with confidence: %.2f%%\n", payload_location,
-			max_matched_pct * 100);
+	//printf("\n[INFO] Match at (%d) with confidence: %.2f%%\n", payload_location,
+	//		max_matched_pct * 100);
 	return payload_location;
 }
 
@@ -211,5 +211,11 @@ time_t get_time() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_usec;
+}
+
+long get_clock_time_us() {
+	struct timespec tv;
+	clock_gettime(CLOCK_MONOTONIC, &tv);
+	return tv.tv_sec * 1000000 + tv.tv_nsec / 1000;
 }
 
