@@ -9,8 +9,8 @@
 
 #include "lisa_lib.h"
 
-void join_lisa_payload(unsigned char * buffer, unsigned char * lisa_sync, int lisa_len,
-		char * payload, int payload_len) {
+void join_lisa_payload(unsigned char * buffer, unsigned char * lisa_sync,
+		int lisa_len, unsigned char * payload, int payload_len) {
 
 	// Insert LISA and payload fields byte by byte
 	for (int i = 0; i < lisa_len; i++) {
@@ -76,20 +76,12 @@ uint gen_mask(uint position) {
  * @param lisa_sync_buffer  Buffer to save sync field to
  */
 void generate_lisa_sync_binary(int corrupt_pct,
-		unsigned char * lisa_sync_buffer, unsigned char * lisa_bit_buffer) {
+		unsigned char * lisa_sync_buffer, int lisa_sync_len,
+		unsigned char ** lisa_bit_buffer) {
 	// Generate standard LISA
 	generate_lisa_sync(corrupt_pct, lisa_sync_buffer);
-
-	printf("LISA Corrupted (%d): %s", corrupt_pct, lisa_sync_buffer);
-
 	// Extract LISA bits
-	for (int byte_n = 0; byte_n < LISA_SYNC_LEN; byte_n++) {
-		for (int bit_n = 7; bit_n >= 0; bit_n--) {
-			//convert to binary and store
-			lisa_bit_buffer[byte_n * 8 + 7 - bit_n] = ((lisa_sync_buffer[byte_n]
-					>> bit_n) & 1);
-		}
-	}
+	char_to_bin(lisa_sync_buffer, lisa_sync_len, lisa_bit_buffer);
 }
 
 /**
@@ -218,8 +210,7 @@ long get_clock_time_us() {
 /**
  * Converts any character string into a char array of '1' and '0'
  */
-void char_to_bin(char * input, unsigned char ** result) {
-	int input_len = strlen(input);
+void char_to_bin(unsigned char * input, int input_len, unsigned char ** result) {
 	unsigned char curr;
 
 	*result = (unsigned char *) calloc(input_len * 8 + 1, sizeof(unsigned char));
@@ -232,3 +223,12 @@ void char_to_bin(char * input, unsigned char ** result) {
 	}
 }
 
+void bin_to_char(unsigned char * input, int input_len, char ** result) {
+	*result = (char *) calloc(input_len / 8 + 1, sizeof(char));
+	unsigned char curr;
+
+	for (int i = 0; i < input_len; i++) {
+		curr = input[i];
+		(*result)[i / 8] = ((curr << (7 - i % 8)) | (*result)[i / 8]);
+	}
+}
