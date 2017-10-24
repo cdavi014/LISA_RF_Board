@@ -209,7 +209,7 @@ int gpioOpen(jetsonGPIO gpio) {
 	snprintf(commandBuffer, sizeof(commandBuffer),
 			SYSFS_GPIO_DIR "/gpio%d/value", gpio);
 
-	fileDescriptor = open(commandBuffer, O_RDONLY | O_NONBLOCK | O_NOATIME);
+	fileDescriptor = open(commandBuffer, O_RDONLY | O_NONBLOCK);// | O_NOATIME); Removed due to Mac complain
 	if (fileDescriptor < 0) {
 		char errorBuffer[128];
 		snprintf(errorBuffer, sizeof(errorBuffer),

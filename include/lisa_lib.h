@@ -33,8 +33,8 @@ using namespace std;
 /* Util Functions */
 int gen_output_buffer_rand(unsigned char * buffer, unsigned char * lisa_sync,
 		char * payload);
-void join_lisa_payload(unsigned char * buffer, unsigned char * lisa_sync,
-    char * payload);
+void join_lisa_payload(unsigned char * buffer, unsigned char * lisa_sync, int lisa_len,
+		char * payload, int payload_len);
 uint gen_mask(uint position);
 void generate_lisa_sync(int corrupt_pct, unsigned char * lisa_sync_buffer);
 void generate_lisa_sync_binary(int corrupt_pct, unsigned char * lisa_sync_buffer, unsigned char * lisa_bit_buffer);
@@ -44,6 +44,7 @@ void write_file_buffer(unsigned char * buffer, char * file_location);
 void print_payload(int idx, unsigned char * input_buffer, int buffer_len);
 time_t get_time();
 time_t get_clock_time_us();
+void char_to_bin(char * input, unsigned char ** result);
 
 /* LISA Algorithms */
 int lisa_find_payload_binary(int confidence_lvl, unsigned char * input_buffer, unsigned char * lisa_bit_buffer);

@@ -9,19 +9,17 @@
 
 #include "lisa_lib.h"
 
-void join_lisa_payload(unsigned char * buffer, unsigned char * lisa_sync,
-    char * payload) {
+void join_lisa_payload(unsigned char * buffer, unsigned char * lisa_sync, int lisa_len,
+		char * payload, int payload_len) {
 
-    int lisa_idx;//, payload_idx;
+	// Insert LISA and payload fields byte by byte
+	for (int i = 0; i < lisa_len; i++) {
+		buffer[i] = lisa_sync[i];
+	}
 
-    lisa_idx = 0;
-    //payload_idx = lisa_idx + LISA_SYNC_LEN;
-
-    // Insert LISA and payload fields byte by byte
-    for(int i = lisa_idx; i < lisa_idx + LISA_SYNC_LEN; i++) {
-            buffer[i] = lisa_sync[i - lisa_idx];
-            buffer[i + LISA_SYNC_LEN] = payload[i - lisa_idx];
-    }
+	for (int i = 0; i < payload_len; i++) {
+		buffer[i + lisa_len] = payload[i];
+	}
 }
 
 /**
@@ -101,7 +99,7 @@ void generate_lisa_sync_binary(int corrupt_pct,
  * @param lisa_sync_buffer  Buffer to save sync field to
  */
 void generate_lisa_sync(int corrupt_pct, unsigned char * lisa_sync_buffer) {
-	char lisa_prefixes[2] = {0xA0, 0x50};
+	char lisa_prefixes[2] = { 0xA0, 0x50 };
 	int idx;
 
 	// Generate standard LISA
@@ -111,8 +109,7 @@ void generate_lisa_sync(int corrupt_pct, unsigned char * lisa_sync_buffer) {
 			lisa_sync_buffer[idx] = lisa_prefixes[i] + j;
 
 			if (DEBUG > 1)
-				printf("gen_lisa_buffer[%d] = %x\n", idx,
-						lisa_sync_buffer[idx] & 0xff);
+				printf("gen_lisa_buffer[%d] = %x\n", idx, lisa_sync_buffer[idx] & 0xff);
 		}
 	}
 
@@ -142,9 +139,8 @@ void generate_lisa_sync(int corrupt_pct, unsigned char * lisa_sync_buffer) {
 		lisa_sync_buffer[global_byte_offset] ^= bit_mask;
 
 		if (DEBUG >= 1)
-			printf("[%d] Byte after applying mask [%d] at %d: %x\n", i,
-					bit_mask, global_byte_offset,
-					lisa_sync_buffer[global_byte_offset]);
+			printf("[%d] Byte after applying mask [%d] at %d: %x\n", i, bit_mask,
+					global_byte_offset, lisa_sync_buffer[global_byte_offset]);
 	}
 }
 
@@ -217,5 +213,22 @@ long get_clock_time_us() {
 	struct timespec tv;
 	clock_gettime(CLOCK_MONOTONIC, &tv);
 	return tv.tv_sec * 1000000 + tv.tv_nsec / 1000;
+}
+
+/**
+ * Converts any character string into a char array of '1' and '0'
+ */
+void char_to_bin(char * input, unsigned char ** result) {
+	int input_len = strlen(input);
+	unsigned char curr;
+
+	*result = (unsigned char *) calloc(input_len * 8 + 1, sizeof(unsigned char));
+
+	for (int i = 0; i < input_len; i++) {
+		curr = input[i];
+		for (int j = 0; j < 8; j++) {
+			(*result)[8 * i + j] = ((curr >> (7 - j)) & 1);
+		}
+	}
 }
 
