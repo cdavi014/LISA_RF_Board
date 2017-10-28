@@ -13,7 +13,7 @@
 #include <fcntl.h>
 #include <poll.h>
 
-#define MODE 'R'	// T - Transmit, R - Receive
+#define MODE 'T'	// T - Transmit, R - Receive
 
 jetsonTX1GPIONumber RX_pin = gpio63;
 jetsonTX1GPIONumber TX_pin = gpio186;
@@ -30,7 +30,7 @@ unsigned char read_buffer[BUFFER_LEN] = { 0 };
 int h = 0;
 int match_confidence = 60;
 int bps = 1000;
-int skew = 15; // Need to account for skew from sending device. Ideally this is not needed.
+int skew = 0; // Need to account for skew from sending device. Ideally this is not needed.
 struct sigaction sa;
 struct itimerval timer;
 
@@ -88,7 +88,7 @@ int poll_edge(int fid) {
 /**
  * Read the GPIO pin and check for LISA input
  */
-void read_gpio() {
+void read_gpio() { //TODO: fid should be a parameter
 	if (h >= BUFFER_LEN)
 		h = 0;
 	lseek(fid, 0, SEEK_SET);
@@ -122,6 +122,20 @@ void read_gpio() {
 }
 
 /**
+ * Send LISA + payload
+ */
+void send_gpio() {
+	static int out = 0;
+	if(out == 0){
+		gpioSetValue(TX_pin, out);
+		out = 1;
+	} else {
+		gpioSetValue(TX_pin, out);
+		out = 0;
+	}
+}
+
+/**
  * Call back to handle the timeput of the timer.
  */
 void gpio_rx_handler(int signum) {
@@ -136,11 +150,10 @@ void gpio_rx_handler(int signum) {
  */
 void gpio_tx_handler(int signum) {
 	static int count = 0;
-
 	// Setup a buffer globably with the LISA + Scrambled payload
 	// Use a pointer to continuously send data out
 	count++;
-	read_gpio();
+	send_gpio();
 }
 
 /**
@@ -151,7 +164,11 @@ void setup_timer(struct itimerval * timer, struct sigaction * sa) {
 	int ret = 0;
 
 	memset(sa, 0, sizeof(*sa));
-	sa->sa_handler = &gpio_rx_handler;
+	if(MODE == 'R')
+		sa->sa_handler = &gpio_rx_handler;
+	else
+		sa->sa_handler = &gpio_tx_handler;
+
 	ret = sigaction(SIGALRM, sa, NULL);
 	timer->it_value.tv_sec = 0;
 	timer->it_value.tv_usec = 1000000 / bps;
@@ -165,7 +182,7 @@ void print_rf_config() {
 			" pin configuration:\n\n"
 			" ------------------------------------\n"
 			"|  Config  | Pins En. | Pin Func     |\n"
-			"| LL_Rx_Tx |	  1, 2   | 1-Tx	  2-Rx  |\n"
+			"| LL_Rx_Tx |   1, 2   | 1-Tx   2-Rx  |\n"
 			"|  RF_RX   |   3, 4   | 3-Data 4-Vcc |\n"
 			"|  RF_TX   |   5, 6   | 5-Data 6-Vcc |\n"
 			"|  MISC    |   7, 8   | 7-xx   8-xx  |\n"
@@ -175,7 +192,7 @@ void print_rf_config() {
 void rx_data() {
 	// Set up GPIO Handler
 	print_rf_config();
-	sleep(5000);
+	sleep(5);
 
 	printf("\nSetting up timer...\n");
 	setup_timer(&timer, &sa);
@@ -206,7 +223,7 @@ void rx_data() {
 void tx_data() {
 	// Set up GPIO Handler
 	print_rf_config();
-	sleep(5000);
+	sleep(5);
 
 	printf("\nSetting up timer...\n");
 	setup_timer(&timer, &sa);
@@ -215,10 +232,11 @@ void tx_data() {
 	printf("\nSetting up GPIO Pins for Tx...\n");
 	gpioExport(TX_pin);
 	gpioSetDirection(TX_pin, outputPin);
-	fid = gpioOpen(TX_pin);
 
-	//setitimer(ITIMER_REAL, &timer, NULL);
-	printf("\nDone setting up Rx!\n");
+	setitimer(ITIMER_REAL, &timer, NULL);
+	printf("\nDone setting up Tx!\n");
+	
+	while(1) ;
 }
 
 int main(int argc, char *argv[]) {
