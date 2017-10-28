@@ -9,17 +9,55 @@
 
 #include "lisa_lib.h"
 
-void join_lisa_payload(unsigned char * buffer, unsigned char * lisa_sync,
-		int lisa_len, unsigned char * payload, int payload_len) {
+/**
+ * Joins the lisa_sync and the payload buffers and places them into buffer.
+ */
+void join_lisa_payload(unsigned char ** buffer, unsigned char * lisa_sync,
+	int lisa_len, unsigned char * payload, int payload_len) {
 
-	// Insert LISA and payload fields byte by byte
+	*buffer = (unsigned char *) calloc(lisa_len + payload_len, sizeof(unsigned char));
+
+	// Insert LISA Sync
 	for (int i = 0; i < lisa_len; i++) {
-		buffer[i] = lisa_sync[i];
+		(*buffer)[i] = lisa_sync[i];
 	}
 
+	// Insert Payload
 	for (int i = 0; i < payload_len; i++) {
-		buffer[i + lisa_len] = payload[i];
+		(*buffer)[i + lisa_len] = payload[i];
 	}
+}
+
+/** Function will combine lisa_sync + payload and place it in the
+ * buffer provided at location specified by lisa_idx. This is intended for
+ * testing purposes only.
+ *
+ * @param buffer    Output buffer to place sync + payload.
+ * @param lisa_sync Sync field to place in the buffer
+ * @param payload   The payload to place in the output buffer
+ * @param lisa_idx	Location of where to store the lisa + payload (circular buffer)
+ */
+int gen_output_buffer_idx(unsigned char * buffer, int buffer_len, unsigned char * lisa_sync,
+		int lisa_len, unsigned char * payload, int payload_len, int lisa_idx) {
+
+	unsigned char * lisa_payload;
+	int payload_idx = (lisa_idx + lisa_len) % buffer_len;
+
+	if (lisa_idx >= BUFFER_LEN) {
+		printf("[ERROR] Lisa idx is greater than BUFFER_LEN\n");
+		exit(0);
+	}
+
+	// Combine lisa sync with payload
+	join_lisa_payload(&lisa_payload, lisa_sync, lisa_len, payload,
+			payload_len);
+
+	// Insert LISA and payload fields byte by byte with circular buffering
+	for (int i = 0; i < lisa_len + payload_len; i++) {
+		buffer[(i + lisa_idx) % BUFFER_LEN] = lisa_payload[i];
+	}
+
+	return payload_idx;
 }
 
 /**
@@ -32,30 +70,19 @@ void join_lisa_payload(unsigned char * buffer, unsigned char * lisa_sync,
  * @param gen_file  Whether to generate an output file [1] or not [0]. The
  *                  name of the output file will be lisa_output.txt
  */
-int gen_output_buffer_rand(unsigned char * buffer, unsigned char * lisa_sync,
-		char * payload) {
+int gen_output_buffer_rand(unsigned char * buffer, int buffer_len, unsigned char * lisa_sync,
+		int lisa_len, unsigned char * payload, int payload_len) {
 
-	int lisa_idx, payload_idx;
-	int payload_len = strlen(payload);
+	srand((unsigned)time(NULL)); // Seed random generator
 
 	// Generate random offset for sync + payload
 	// between 0 and BUFFER_LEN - LISA_SYNC_LEN - payload_len
-	lisa_idx = rand() % (BUFFER_LEN - LISA_SYNC_LEN - payload_len);
-	payload_idx = lisa_idx + LISA_SYNC_LEN;
+	int lisa_rnd_idx = rand() % (buffer_len - 1);
+	int payload_idx = lisa_rnd_idx + lisa_len;
 
-	// Insert LISA and payload fields byte by byte
-	for (int i = lisa_idx; i < lisa_idx + LISA_SYNC_LEN; i++) {
-		buffer[i] = lisa_sync[i - lisa_idx];
-		buffer[i + LISA_SYNC_LEN] = payload[i - lisa_idx];
-	}
-
-	if (DEBUG == 1) {
-		for (int i = lisa_idx; i < lisa_idx + LISA_SYNC_LEN; i++)
-			printf("output_buffer[%d] = %x\n", i, buffer[i] & 0xff);
-
-		for (int i = payload_idx; i < payload_idx + payload_len; i++)
-			printf("output_buffer[%d] = %c\n", i, buffer[i]);
-	}
+	printf("Rand idx: %d", lisa_rnd_idx);
+	gen_output_buffer_idx(buffer, buffer_len, lisa_sync, lisa_len,
+			payload, payload_len, lisa_rnd_idx);
 
 	return payload_idx;
 }
@@ -178,7 +205,7 @@ int lisa_find_payload_binary(int confidence_lvl, unsigned char * input_buffer,
 // Relies on null character
 void print_payload(int idx, unsigned char * input_buffer, int buffer_len) {
 	unsigned int curr = 0, temp = 0, shift = 0;
-	//char rcv_pld [256] = {'\0'};
+
 	printf("\nMessage is: ");
 	for (int i = 0; i < 256; i++) {
 		temp = input_buffer[(i + idx) % buffer_len];
@@ -194,6 +221,19 @@ void print_payload(int idx, unsigned char * input_buffer, int buffer_len) {
 	}
 	printf("\n");
 }
+
+void print_payload2(int idx, unsigned char * input_buffer, int buffer_len, int max_payload_len, char ** payload) {
+	// Extract payload from circular buffer
+	unsigned char * result = (unsigned char *) calloc(max_payload_len, sizeof(unsigned char)); //temp buffer
+
+	for(int i = 0; i < max_payload_len; i++) {
+		result[i] = input_buffer[(idx + i) % buffer_len];
+	}
+
+	bin_to_char(result, max_payload_len, payload);// Convert to chars
+	free(result);
+}
+
 
 time_t get_time() {
 	struct timeval tv;

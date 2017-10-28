@@ -29,7 +29,6 @@
 void scramble(unsigned char * payload, int payload_len, unsigned char ** result,
 		int order) {
 	int PP = calc_large(order);
-	int P = PP - 1;
 
 	if (order % 2 == 0 || order < 3) {
 		printf("[ERROR] Scrambling order must be an odd number >= 3\n");
@@ -86,7 +85,6 @@ void scramble(unsigned char * payload, int payload_len, unsigned char ** result,
 void descramble(unsigned char * payload, int payload_len,
 		unsigned char ** result, int order) {
 	int PP = calc_large(order);
-	int P = PP - 1;
 
 	if (order % 2 == 0 || order < 3) {
 		printf("[ERROR] Scrambling order must be an odd number >= 3\n");
