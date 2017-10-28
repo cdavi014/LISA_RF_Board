@@ -175,6 +175,7 @@ void print_rf_config() {
 }
 
 void rx_data() {
+
 	// Set up GPIO Handler
 	print_rf_config();
 	sleep(5000);
