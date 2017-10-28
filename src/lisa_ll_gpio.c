@@ -80,7 +80,6 @@ int poll_edge(int fid) {
 			//printf("\nGPIO POLLERR Event\n");
 			return 0;
 		}
-
 		fflush(stdout);
 	}
 	return 0;
