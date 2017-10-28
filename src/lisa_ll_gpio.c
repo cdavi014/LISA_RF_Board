@@ -102,7 +102,6 @@ void read_gpio() {
 		read_buffer[h] = (unsigned int) 0;
 	else if (read_value == '1')
 		read_buffer[h] = (unsigned int) 1;
-
 	//cout << get_clock_time_us() << "," << h << "," << (int) read_buffer[h] <<endl;
 
 	//Check to see if it matches LISA
