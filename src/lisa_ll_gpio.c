@@ -14,7 +14,6 @@
 #include <poll.h>
 
 #define MODE 'R'	// T - Transmit, R - Receive
-#define NFDS 2
 
 jetsonTX1GPIONumber RX_pin = gpio63;
 jetsonTX1GPIONumber TX_pin = gpio186;
@@ -45,6 +44,7 @@ int poll_edge(int fid) {
 	int timeout = -1; /* INF seconds */
 	char buff[8];
 	int rc = 0;
+	int NFDS = 2;	// Number of items in the fds array
 	struct pollfd fdset[NFDS];
 
 	memset((void*) fdset, 0, sizeof(fdset));
