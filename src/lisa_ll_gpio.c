@@ -22,7 +22,7 @@ long proc_start_time, proc_end_time, proc_time_clock;
 long sleep_start_time, sleep_end_time, sleep_time_clock = 0;
 int corruption_pct, payload_idx_output, payload_idx_input;
 unsigned char lisa_sync_buffer[LISA_SYNC_LEN] = { 0 };
-unsigned char lisa_bit_buffer[LISA_SYNC_LEN * 8] = { 0 };
+unsigned char * lisa_bit_buffer;
 char * payload;
 unsigned char read_value;
 int fid = 0, err = 0;
@@ -190,9 +190,10 @@ void rx_data() {
 	fid = gpioOpen(RX_pin);
 
 	// Wait for first edge to align the clock
-	ret = poll_edge(fid);
+	int ret = poll_edge(fid);
 	if (ret < 0) {
-		return ret;
+		printf("[ERROR] An error occurred when polling for edge.");
+		return;
 	}
 
 	// Start timer after a small offset from trigger
@@ -223,11 +224,10 @@ void tx_data() {
 }
 
 int main(int argc, char *argv[]) {
-	int ret = 0;
 	setpriority(PRIO_PROCESS, 0, -20);
 
 	// Generate LISA sync
-	generate_lisa_sync_binary(0, lisa_sync_buffer, lisa_bit_buffer);
+	generate_lisa_sync_binary(0, lisa_sync_buffer, LISA_SYNC_LEN, &lisa_bit_buffer);
 
 	if (MODE == 'R')
 		rx_data();
