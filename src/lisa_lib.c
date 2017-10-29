@@ -222,7 +222,7 @@ void print_payload(int idx, unsigned char * input_buffer, int buffer_len) {
 	printf("\n");
 }
 
-void print_payload2(int idx, unsigned char * input_buffer, int buffer_len, int max_payload_len, char ** payload) {
+void extract_payload(int idx, unsigned char * input_buffer, int buffer_len, int max_payload_len, char ** payload) {
 	// Extract payload from circular buffer
 	unsigned char * result = (unsigned char *) calloc(max_payload_len, sizeof(unsigned char)); //temp buffer
 

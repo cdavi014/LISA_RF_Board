@@ -55,7 +55,7 @@ void write_file_buffer(unsigned char * buffer, char * file_location);
 void char_to_bin(unsigned char * input, int input_len, unsigned char ** result);
 void bin_to_char(unsigned char * input, int input_len, char ** result);
 void print_payload(int idx, unsigned char * input_buffer, int buffer_len);
-void print_payload2(int idx, unsigned char * input_buffer, int buffer_len, int payload_max_len, char ** payload);
+void extract_payload(int idx, unsigned char * input_buffer, int buffer_len, int payload_max_len, char ** payload);
 
 /* Misc Helper Functions */
 void pct_prompt(int * input_pct, char * prompt);

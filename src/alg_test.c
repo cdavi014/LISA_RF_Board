@@ -49,7 +49,7 @@ void test_lisa() {
 		printf("%d", input_buffer_bin[(i + payload_idx_found) % BUFFER_LEN]);
 	}
 
-	print_payload2(payload_idx_found, input_buffer_bin, BUFFER_LEN, 256, &payload_found);
+	extract_payload(payload_idx_found, input_buffer_bin, BUFFER_LEN, 256, &payload_found);
 	printf("\nPayload: %s", payload_found);
 
 

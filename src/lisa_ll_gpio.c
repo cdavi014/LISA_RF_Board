@@ -36,6 +36,8 @@ struct sigaction sa;
 struct itimerval timer;
 unsigned char * tx_buffer;
 int tx_buffer_len;
+int scramble_order = 5;
+
 /**
  * poll_edge is used to trigger the collection process. It polls an interrupt coming from the GPIO
  * pin. Once the trigger comes in, then we set the timer. If we did not do this, then the timer.
@@ -91,6 +93,9 @@ int poll_edge(int fid) {
  * Read the GPIO pin and check for LISA input
  */
 void read_gpio() { //TODO: fid should be a parameter
+	char * payload_found;
+	unsigned char * descrambled_result;
+
 	if (h >= BUFFER_LEN)
 		h = 0;
 	lseek(fid, 0, SEEK_SET);
@@ -109,11 +114,14 @@ void read_gpio() { //TODO: fid should be a parameter
 	//Check to see if it matches LISA
 	if (h % 128 == 0) {
 		proc_start_time = get_clock_time_us();
-		// scramble lisa
-
 		payload_idx_input = lisa_find_payload_binary(match_confidence, read_buffer,
 				lisa_bit_buffer);
+		// extract payload
+		extract_payload(payload_idx_input, read_buffer, BUFFER_LEN, 256, &payload_found);
+
 		// descramble payload
+		descramble((unsigned char *) payload_found, 256, &descrambled_result, scramble_order);
+
 		if (payload_idx_input != -1) {
 			printf("[SUCCESS] Payload found at index %d", payload_idx_input);
 			print_payload(payload_idx_input, read_buffer, BUFFER_LEN);
@@ -264,15 +272,13 @@ void tx_data() {
 int main(int argc, char *argv[]) {
 	setpriority(PRIO_PROCESS, 0, -20);
 
-	int scramble_order = 5;
-
 	// Generate LISA sync
 	generate_lisa_sync_binary(0, lisa_sync_buffer, LISA_SYNC_LEN,
 			&lisa_bit_buffer);
 
-	if (MODE == 'R')
+	if (MODE == 'R') {
 		rx_data();
-	else {
+	} else {
 		unsigned char * payload_bit_buffer;
 		unsigned char * scrambled_payload;
 
