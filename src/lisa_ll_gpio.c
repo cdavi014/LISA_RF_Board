@@ -110,6 +110,7 @@ void read_gpio() { //TODO: fid should be a parameter
 	if (h % 128 == 0) {
 		proc_start_time = get_clock_time_us();
 		// scramble lisa
+
 		payload_idx_input = lisa_find_payload_binary(match_confidence, read_buffer,
 				lisa_bit_buffer);
 		// descramble payload
