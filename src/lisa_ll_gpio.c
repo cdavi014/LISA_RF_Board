@@ -33,6 +33,8 @@ int bps = 1000;
 int skew = 0; // Need to account for skew from sending device. Ideally this is not needed.
 struct sigaction sa;
 struct itimerval timer;
+unsigned char * tx_buffer;
+int tx_buffer_len;
 
 /**
  * poll_edge is used to trigger the collection process. It polls an interrupt coming from the GPIO
@@ -121,17 +123,33 @@ void read_gpio() { //TODO: fid should be a parameter
 	fflush(stdout);
 }
 
+void pause_timer(struct itimerval * timer) {
+	timer->it_value.tv_sec = 0;
+	timer->it_value.tv_usec = 0;
+	setitimer(ITIMER_REAL, timer, NULL);
+}
+
+void resume_timer(struct itimerval * timer) {
+	timer->it_value.tv_sec = 0;
+	timer->it_value.tv_usec = 1000000 / bps;
+	setitimer(ITIMER_REAL, timer, NULL);
+}
+
 /**
  * Send LISA + payload
  */
 void send_gpio() {
-	static int out = 0;
-	if(out == 0){
-		gpioSetValue(TX_pin, out);
-		out = 1;
-	} else {
-		gpioSetValue(TX_pin, out);
-		out = 0;
+	static int buff_idx = 0;
+	gpioSetValue(TX_pin, tx_buffer[buff_idx]);
+	printf("%d", buff_idx);
+
+	if(buff_idx >= tx_buffer_len) {
+		buff_idx = 0;
+		pause_timer(&timer);
+		// Sleep for 1 second
+		sleep(1);
+		// Restart the timer
+		resume_timer(&timer);
 	}
 }
 
@@ -164,7 +182,7 @@ void setup_timer(struct itimerval * timer, struct sigaction * sa) {
 	int ret = 0;
 
 	memset(sa, 0, sizeof(*sa));
-	if(MODE == 'R')
+	if (MODE == 'R')
 		sa->sa_handler = &gpio_rx_handler;
 	else
 		sa->sa_handler = &gpio_tx_handler;
@@ -235,21 +253,35 @@ void tx_data() {
 
 	setitimer(ITIMER_REAL, &timer, NULL);
 	printf("\nDone setting up Tx!\n");
-	
-	while(1) ;
+
+	while (1)
+		;
 }
 
 int main(int argc, char *argv[]) {
 	setpriority(PRIO_PROCESS, 0, -20);
 
 	// Generate LISA sync
-	generate_lisa_sync_binary(0, lisa_sync_buffer, LISA_SYNC_LEN, &lisa_bit_buffer);
+	generate_lisa_sync_binary(0, lisa_sync_buffer, LISA_SYNC_LEN,
+			&lisa_bit_buffer);
 
 	if (MODE == 'R')
 		rx_data();
-	else
-		tx_data();
+	else {
+		unsigned char * tx_buffer;
+		unsigned char * payload_bit_buffer;
 
+		// Convert payload to binary
+		char_to_bin((unsigned char *) payload, strlen(payload),
+				&payload_bit_buffer);
+		// Join LISA + Payload
+		join_lisa_payload(&tx_buffer, lisa_bit_buffer,
+				LISA_SYNC_LEN * 8, payload_bit_buffer, strlen(payload) * 8);
+
+		tx_buffer_len = LISA_SYNC_LEN * 8 + strlen(payload) * 8;
+		// Send Buffer
+		tx_data();
+	}
 	return 0;
 }
 
