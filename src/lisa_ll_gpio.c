@@ -261,6 +261,8 @@ void tx_data() {
 int main(int argc, char *argv[]) {
 	setpriority(PRIO_PROCESS, 0, -20);
 
+	int scramble_order = 5;
+
 	// Generate LISA sync
 	generate_lisa_sync_binary(0, lisa_sync_buffer, LISA_SYNC_LEN,
 			&lisa_bit_buffer);
@@ -270,13 +272,18 @@ int main(int argc, char *argv[]) {
 	else {
 		unsigned char * tx_buffer;
 		unsigned char * payload_bit_buffer;
+		unsigned char * scrambled_payload;
 
 		// Convert payload to binary
 		char_to_bin((unsigned char *) payload, strlen(payload),
 				&payload_bit_buffer);
+
+		// Scramble Payload
+		scramble(payload_bit_buffer, strlen(payload) * 8, &scrambled_payload, scramble_order);
+
 		// Join LISA + Payload
 		join_lisa_payload(&tx_buffer, lisa_bit_buffer,
-				LISA_SYNC_LEN * 8, payload_bit_buffer, strlen(payload) * 8);
+				LISA_SYNC_LEN * 8, scrambled_payload, strlen(payload) * 8);
 
 		tx_buffer_len = LISA_SYNC_LEN * 8 + strlen(payload) * 8;
 		// Send Buffer
