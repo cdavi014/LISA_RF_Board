@@ -30,7 +30,7 @@ int fid = 0, err = 0;
 unsigned char read_buffer[BUFFER_LEN] = { 0 };
 int h = 0;
 int match_confidence = 60;
-int bps = 10;
+int bps = 1000;
 int skew = 0; // Need to account for skew from sending device. Ideally this is not needed.
 struct sigaction sa;
 struct itimerval timer;
