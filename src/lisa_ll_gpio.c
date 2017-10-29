@@ -23,19 +23,18 @@ long sleep_start_time, sleep_end_time, sleep_time_clock = 0;
 int corruption_pct, payload_idx_output, payload_idx_input;
 unsigned char lisa_sync_buffer[LISA_SYNC_LEN] = { 0 };
 unsigned char * lisa_bit_buffer;
-char * payload;
+const char * payload = "Carlos_Davila_SJSU_010779067";
 unsigned char read_value;
 int fid = 0, err = 0;
 unsigned char read_buffer[BUFFER_LEN] = { 0 };
 int h = 0;
 int match_confidence = 60;
-int bps = 1000;
+int bps = 10;
 int skew = 0; // Need to account for skew from sending device. Ideally this is not needed.
 struct sigaction sa;
 struct itimerval timer;
 unsigned char * tx_buffer;
 int tx_buffer_len;
-
 /**
  * poll_edge is used to trigger the collection process. It polls an interrupt coming from the GPIO
  * pin. Once the trigger comes in, then we set the timer. If we did not do this, then the timer.
@@ -140,10 +139,11 @@ void resume_timer(struct itimerval * timer) {
  */
 void send_gpio() {
 	static int buff_idx = 0;
-	gpioSetValue(TX_pin, tx_buffer[buff_idx]);
-	printf("%d", buff_idx);
+	gpioSetValue(TX_pin, tx_buffer[buff_idx++]);
+	printf("%d", tx_buffer[buff_idx]);
 
 	if(buff_idx >= tx_buffer_len) {
+		printf("\n\nReset!!\n\n");
 		buff_idx = 0;
 		pause_timer(&timer);
 		// Sleep for 1 second
@@ -268,12 +268,12 @@ int main(int argc, char *argv[]) {
 	if (MODE == 'R')
 		rx_data();
 	else {
-		unsigned char * tx_buffer;
 		unsigned char * payload_bit_buffer;
 
 		// Convert payload to binary
 		char_to_bin((unsigned char *) payload, strlen(payload),
 				&payload_bit_buffer);
+		
 		// Join LISA + Payload
 		join_lisa_payload(&tx_buffer, lisa_bit_buffer,
 				LISA_SYNC_LEN * 8, payload_bit_buffer, strlen(payload) * 8);
