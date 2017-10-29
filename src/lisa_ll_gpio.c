@@ -8,6 +8,7 @@
  *  TODO:		Need to implement Tx, Scrambling and SIGINT handling
  */
 #include "lisa_lib.h"
+#include "scrambling_lib.h"
 #include <signal.h>
 #include <errno.h>
 #include <fcntl.h>
