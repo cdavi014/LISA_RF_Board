@@ -1,3 +1,12 @@
+/*
+ * scrambling_lib.c
+ *
+ *  Created on: Sep 16, 2017
+ *      Author: Carlos R. Davila
+ *
+ *      Status: Working version.
+ */
+
 #include "scrambling_lib.h"
 
 /**
